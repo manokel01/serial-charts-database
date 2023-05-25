@@ -1,0 +1,32 @@
+{
+  "name": "serial-node-socket",
+  "version": "1.0.0",
+  "description": "An app that communicates with the serial port thgrough a webpage",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "nodejs",
+    "serial",
+    "port",
+    "arduino",
+    "javascript",
+    "socket"
+  ],
+  "author": "manokel01",
+  "license": "ISC",
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
+    "@types/socket.io": "^3.0.2",
+    "chartjs": "^0.3.24",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "influxdb-client": "^0.0.1",
+    "serialport": "^9.0.1",
+    "shelljs": "^0.8.5",
+    "socket.io": "^2.0.4",
+    "stream": "^0.0.2"
+  }
+}
