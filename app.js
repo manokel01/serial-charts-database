@@ -30,6 +30,8 @@ SerialPort.list().then(ports => {
    });
  });
 
+ // list ports
+
 // create route to get serial ports (lists both /dev/tty and /dev/cu)
 //The filter(Boolean) call removes any null values from the resulting array.
 app.get('/serialports', (req, res) => {
@@ -45,6 +47,7 @@ app.get('/serialports', (req, res) => {
     }).filter(Boolean);
     const allPorts = [...ports, ...cuPorts];
     res.json(allPorts);
+    console.log(allPorts);
   });
 });
 
@@ -64,7 +67,7 @@ app.get('/style.css', function(req, res) {
 
  // open server port 5000
  const server = app.listen(5000, function () {
-   console.log('Server is listening on port 3000!');
+   console.log('Server is listening on port 5000!');
 });
 
 // listen for serial port properties selected by user
@@ -95,7 +98,7 @@ io.on('connection', function(socket) {
   // ------- influxdb configuration ---------- //
   dotenv.config();
 
-  const token = process.env.INFLUXDB_TOKEN;
+  const token = 'i9CZErxnq1BrrZJq46LYKWLmE3K3Rt0FmB78G8ODd5uUSfte3D_qy-l_pmIRpzm4Rms0Of7DIqwLxy-VM595pQ==';
   const url = process.env.INFLUXDB_URL;
   const org = process.env.INFLUXDB_ORG;
   const bucket = process.env.INFLUXDB_BUCKET;
@@ -116,9 +119,9 @@ io.on('connection', function(socket) {
     .stringField('weatherDesc', weather.weatherDesc)
     .stringField('deviceID', weather.deviceID)
     .stringField('mac', weather.mac)
-    .stringField('locationID', weather.locationID)
+    .stringField('location', weather.location)
     .floatField('battery', weather.battery)
-    .intField('timestamp', weather.timestamp);
+    .floatField('timestamp', weather.timestamp);
 
     return point;
   };
@@ -175,7 +178,7 @@ class Weather {
     this.temperature = temperature;
     this.humidity = humidity;
     this.pressure = pressure;
-    this.location = weatherDesc;
+    this.weatherDesc = weatherDesc;
     this.deviceID = deviceID;
     this.mac = mac;
     this.location = location;
