@@ -6,13 +6,35 @@ const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 const dotenv = require('dotenv');
 const getSerialPorts = require('./config/serialport');
 
+const SENSOR1_ID = 'Arduino-Nano-Sense';
+const SENSOR2_ID = 'RPi4';        // emulate second sensor
+const SENSOR3_ID = 'Jetson2';     // emulate third sensor
+const SENSOR4_ID = 'ESP32';       // emulate forth sensor
+const SENSOR5_ID = 'ESP28';       // emulate fifth sensor
+const SENSOR6_ID = 'Arduin-UNO';  // emulate sixth sensor
+
+// InfluxDB configuration
+dotenv.config();
+const token = 'IaRU742giMEszueQ5I2HRipcxsYLRjJqF_5cI8AK_lWnmnT913lH34Olmg3tb0XCQ-wWWgX2VgBhTJQMltK3zQ==';
+const url = process.env.INFLUXDB_URL;
+const org = process.env.INFLUXDB_ORG;
+const bucket = process.env.INFLUXDB_BUCKET;
+
+const influxClient = new InfluxDB({ url, token });
+const writeApi = influxClient.getWriteApi(org, bucket, 'ns');
+
 // Parsing one line at a time
 const parser = new parsers.Readline({
   delimiter: '\r\n'
 });
 
 // List available serial ports in console
-getSerialPorts();
+getSerialPorts().then(availablePorts => {
+  console.log('Available serial ports:');
+  availablePorts.forEach(port => {
+    console.log(`${port.path} - ${port.manufacturer}`);
+  });
+});
 
 // Create route to get serial ports (lists both /dev/tty and /dev/cu)
 app.get('/serialports', async (req, res) => {
@@ -68,31 +90,20 @@ io.on('connection', function (socket) {
       console.log(`Serial port ${port} opened successfully`);
     });
 
-    // InfluxDB configuration
-    dotenv.config();
-    const token = 'i9CZErxnq1BrrZJq46LYKWLmE3K3Rt0FmB78G8ODd5uUSfte3D_qy-l_pmIRpzm4Rms0Of7DIqwLxy-VM595pQ==';
-    const url = process.env.INFLUXDB_URL;
-    const org = process.env.INFLUXDB_ORG;
-    const bucket = process.env.INFLUXDB_BUCKET;
-
-    const influxClient = new InfluxDB({ url, token });
-    const writeApi = influxClient.getWriteApi(org, bucket, 'ns');
 
     // Create Point for InfluxDB
     const weatherPoint = (weather) => {
-      const point = new Point('weather-data')
-        .tag('crop', 'grapes')
-        .tag('plot', 1)
-        .tag('region', 'west')
-        .floatField('temperature', weather.temperature)
-        .floatField('humidity', weather.humidity)
-        .floatField('pressure', weather.pressure)
-        .stringField('weatherDesc', weather.weatherDesc)
-        .stringField('deviceID', weather.deviceID)
-        .stringField('mac', weather.mac)
-        .stringField('location', weather.location)
-        .floatField('battery', weather.battery)
-        .floatField('timestamp', weather.timestamp);
+      const point = new Point(weather.sensorId)
+      .tag('type', 'weather-sensor')
+      .floatField('temperature', weather.temperature)
+      .floatField('humidity', weather.humidity)
+      .floatField('pressure', weather.pressure)
+      .stringField('weatherDesc', weather.weatherDesc)
+      .stringField('sensorId', weather.sensorId)
+      .floatField('location_x', weather.location[0])
+      .floatField('location_y', weather.location[1])
+      .floatField('battery', weather.battery)
+      .stringField('timestamp', weather.timestamp);
 
       return point;
     };
@@ -111,13 +122,33 @@ io.on('connection', function (socket) {
         io.emit('values', Object.values(jsonData));
 
         // Assign JSON values to weather object
-        const { temperature, humidity, pressure, weatherDesc, deviceID, mac, location, battery, timestamp } = jsonData;
-        // Create Weather instance with individual values
-        const weather = new Weather(temperature, humidity, pressure, weatherDesc, deviceID, mac, location, battery, timestamp);
-        // Create an InfluxDB datapoint
-        const point = weatherPoint(weather);
+        const { temperature, humidity, pressure, weatherDesc, sensorId, location, battery, timestamp } = jsonData;
+        // Create Weather instance with individual values 
+        const weather1 = new Weather(temperature, humidity, pressure, weatherDesc, sensorId, location, battery, timestamp);
+        // Emulate second sensor with dummy values
+        const weather2 = new Weather(temperature + 1, humidity + 2, pressure - 50, weatherDesc, SENSOR2_ID, [location[0] + 1, location[1] + 1], battery - 20, timestamp);
+        // Emulate third sensor with dummy values
+        const weather3 = new Weather(temperature + 2, humidity + 3, pressure - 40, weatherDesc, SENSOR3_ID, [location[0] + 2, location[1] + 2], battery - 15, timestamp);
+        // Emulate forth sensor with dummy values
+        const weather4 = new Weather(temperature + 3, humidity + 10, pressure + 10, weatherDesc, SENSOR4_ID, [location[0] + 3, location[1] + 3], battery - 10, timestamp);
+        // Emulate fifth sensor with dummy values
+        const weather5 = new Weather(temperature + 4, humidity  - 5, pressure + 5, weatherDesc, SENSOR5_ID, [location[0] + 4, location[1] + 4], battery - 35, timestamp);
+        // Emulate sixth sensor with dummy values
+        const weather6 = new Weather(temperature + 5, humidity - 10, pressure + 12, weatherDesc, SENSOR6_ID, [location[0] + 5, location[1] + 5], battery + 10, timestamp);
+        // Create the InfluxDB datapoints
+        const point1 = weatherPoint(weather1);
+        const point2 = weatherPoint(weather2);
+        const point3 = weatherPoint(weather3);
+        const point4 = weatherPoint(weather4);
+        const point5 = weatherPoint(weather5);
+        const point6 = weatherPoint(weather6);
         // Write data to InfluxDB
-        writeApi.writePoint(point);
+        writeApi.writePoint(point1);
+        writeApi.writePoint(point2);
+        writeApi.writePoint(point3);
+        writeApi.writePoint(point4);
+        writeApi.writePoint(point5);
+        writeApi.writePoint(point6);
       } catch (error) {
         console.error('Error parsing JSON:', error);
       }
@@ -145,13 +176,12 @@ io.on('connection', function (socket) {
 
 // The Weather class to hold JSON values
 class Weather {
-  constructor(temperature, humidity, pressure, weatherDesc, deviceID, mac, location, battery, timestamp) {
+  constructor(temperature, humidity, pressure, weatherDesc, sensorId, location, battery, timestamp) {
     this.temperature = temperature;
     this.humidity = humidity;
     this.pressure = pressure;
     this.weatherDesc = weatherDesc;
-    this.deviceID = deviceID;
-    this.mac = mac;
+    this.sensorId = sensorId;
     this.location = location;
     this.battery = battery;
     this.timestamp = timestamp;

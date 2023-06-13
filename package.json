@@ -28,5 +28,8 @@
     "shelljs": "^0.8.5",
     "socket.io": "^2.0.4",
     "stream": "^0.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 }
