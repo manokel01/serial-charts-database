@@ -13,9 +13,11 @@ const SENSOR4_ID = 'ESP32';       // emulate forth sensor
 const SENSOR5_ID = 'ESP28';       // emulate fifth sensor
 const SENSOR6_ID = 'Arduin-UNO';  // emulate sixth sensor
 
+dotenv.config();
+
 // InfluxDB configuration
 dotenv.config();
-const token = 'IaRU742giMEszueQ5I2HRipcxsYLRjJqF_5cI8AK_lWnmnT913lH34Olmg3tb0XCQ-wWWgX2VgBhTJQMltK3zQ==';
+const token = process.env.INFLUX_TOKEN;
 const url = process.env.INFLUXDB_URL;
 const org = process.env.INFLUXDB_ORG;
 const bucket = process.env.INFLUXDB_BUCKET;
